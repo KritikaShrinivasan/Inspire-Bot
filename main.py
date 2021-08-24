@@ -4,6 +4,7 @@ import requests
 #requests module helps us to make http requests
 import json
 import random
+from replit import db
 
 
 #creating instance for client using methods from discord.py library
@@ -30,6 +31,14 @@ def get_quote():
   return(quote)
 
 
+def update_encouragements(encouraging_message):
+  if "encouragements" in db.keys():
+    encouragements = db["encouragements"]
+    encouragements.append(encouraging_message)
+    db["encouragements"] = encouragements
+  else:
+    db["encouragements"] = [encouraging_message]
+  
 #using client.event decorator to register an event
 @client.event
 
@@ -48,12 +57,21 @@ async def on_message(message):
     return 
   
   msg = message.content
-  if message.content.startswith('$inspire'):
+  if msg.startswith('$inspire'):
     quote = get_quote()
     await message.channel.send(quote)
 
+  options = starter_encouragements
+  if "encouragements" in db.keys():
+    options.extend(db["encouragements"])
+
   if any(word in msg for word in sad_words):
-    await message.channel.send(random.choice(starter_encouragements))
-  
+    await message.channel.send(random.choice(options))
+
+  if msg.startswith("$new"):
+    encouraging_message = msg.split("$new", 1)[1]
+    update_encouragements(encouraging_message)
+    await message.channel.send("New encouragement added.")
+
 
 client.run(os.getenv('Token'))
